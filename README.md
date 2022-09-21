@@ -23,6 +23,13 @@ Using grooksdb as a wrapper for rocksdb
 https://github.com/linxGnu/grocksdb
 
 
+## Sharding
+Efficent sharding mechanism based on Cocroach DB. Need more research on best way to do it.
+
+## Report only nodes
+Querying can be slow in some scenarios where multiple joins and traversals of object trees are required. Indexing is managed as a separated module and can be deployed as a separated node or group of nodes.
+
+
 ## Implementation details
 Client do any translation work required
 Client always adhere to simplicity for the language it is used in
@@ -58,4 +65,6 @@ Basic represenation of an object
 
 
 Map will be like array but instead of an index as key it will have a given key
+
+
 
