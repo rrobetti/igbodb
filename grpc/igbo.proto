@@ -3,7 +3,8 @@ syntax="proto3";
 option go_package = "./proto";
 
 service IgboDB {
-    rpc Save(Objects) returns (OperationResults) {}
+    rpc Create(Objects) returns (OperationResults) {}
+    rpc Update(Objects) returns (OperationResults) {}
     rpc Delete(Ids) returns (OperationResults) {}
     rpc Retrieve(Ids) returns (Objects  ) {}
     rpc Query(QueryRequest) returns (Objects) {}

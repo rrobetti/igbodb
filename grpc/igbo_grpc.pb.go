@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.6.1
-// source: grpc/igbo.proto
+// source: igbo.proto
 
 package proto
 
@@ -22,7 +22,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IgboDBClient interface {
-	Save(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error)
+	Create(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error)
+	Update(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error)
 	Delete(ctx context.Context, in *Ids, opts ...grpc.CallOption) (*OperationResults, error)
 	Retrieve(ctx context.Context, in *Ids, opts ...grpc.CallOption) (*Objects, error)
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*Objects, error)
@@ -36,9 +37,18 @@ func NewIgboDBClient(cc grpc.ClientConnInterface) IgboDBClient {
 	return &igboDBClient{cc}
 }
 
-func (c *igboDBClient) Save(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error) {
+func (c *igboDBClient) Create(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error) {
 	out := new(OperationResults)
-	err := c.cc.Invoke(ctx, "/IgboDB/Save", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/IgboDB/Create", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *igboDBClient) Update(ctx context.Context, in *Objects, opts ...grpc.CallOption) (*OperationResults, error) {
+	out := new(OperationResults)
+	err := c.cc.Invoke(ctx, "/IgboDB/Update", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +86,8 @@ func (c *igboDBClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc
 // All implementations must embed UnimplementedIgboDBServer
 // for forward compatibility
 type IgboDBServer interface {
-	Save(context.Context, *Objects) (*OperationResults, error)
+	Create(context.Context, *Objects) (*OperationResults, error)
+	Update(context.Context, *Objects) (*OperationResults, error)
 	Delete(context.Context, *Ids) (*OperationResults, error)
 	Retrieve(context.Context, *Ids) (*Objects, error)
 	Query(context.Context, *QueryRequest) (*Objects, error)
@@ -87,8 +98,11 @@ type IgboDBServer interface {
 type UnimplementedIgboDBServer struct {
 }
 
-func (UnimplementedIgboDBServer) Save(context.Context, *Objects) (*OperationResults, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Save not implemented")
+func (UnimplementedIgboDBServer) Create(context.Context, *Objects) (*OperationResults, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedIgboDBServer) Update(context.Context, *Objects) (*OperationResults, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedIgboDBServer) Delete(context.Context, *Ids) (*OperationResults, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -112,20 +126,38 @@ func RegisterIgboDBServer(s grpc.ServiceRegistrar, srv IgboDBServer) {
 	s.RegisterService(&IgboDB_ServiceDesc, srv)
 }
 
-func _IgboDB_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _IgboDB_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Objects)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(IgboDBServer).Save(ctx, in)
+		return srv.(IgboDBServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/IgboDB/Save",
+		FullMethod: "/IgboDB/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IgboDBServer).Save(ctx, req.(*Objects))
+		return srv.(IgboDBServer).Create(ctx, req.(*Objects))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IgboDB_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Objects)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IgboDBServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/IgboDB/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IgboDBServer).Update(ctx, req.(*Objects))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -192,8 +224,12 @@ var IgboDB_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*IgboDBServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Save",
-			Handler:    _IgboDB_Save_Handler,
+			MethodName: "Create",
+			Handler:    _IgboDB_Create_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _IgboDB_Update_Handler,
 		},
 		{
 			MethodName: "Delete",
@@ -209,5 +245,5 @@ var IgboDB_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "grpc/igbo.proto",
+	Metadata: "igbo.proto",
 }
