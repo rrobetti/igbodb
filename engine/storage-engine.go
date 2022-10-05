@@ -3,108 +3,114 @@ package engine
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
-	"time"
-
-	"google.golang.org/protobuf/types/known/timestamppb"
-	api "igbodb/grpc"
-
+	"strings"
 	// needed for SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const create string = `
-		CREATE TABLE IF NOT EXISTS StorageEngine (
-		id TEXT NOT NULL PRIMARY KEY,
-		time DATETIME NOT NULL,
-		description TEXT
+const createStatement string = `
+		CREATE TABLE IF NOT EXISTS %v (
+		key TEXT NOT NULL PRIMARY KEY,
+		value TEXT
 		);
 `
-const file string = "StorageEngine.db"
+const file string = "KeyValueStorage.db"
 
-type StorageEngine struct {
+type StorageEngine interface {
+	Create(storageName string, key string, value string) error
+	Retrieve(storageName string, key string) (string, error)
+	Update(storageName string, key string, value string) error
+	Delete(storageName string, key string) error
+}
+
+type StorageEngineImpl struct {
 	db *sql.DB
 }
 
-func (c *StorageEngine) NewStorageEngine() (*StorageEngine, error) {
+func (c *StorageEngineImpl) NewStorageEngine() (*StorageEngineImpl, error) {
 	db, err := sql.Open("sqlite3", file)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := db.Exec(create); err != nil {
-		return nil, err
-	}
-	return &StorageEngine{
+	return &StorageEngineImpl{
 		db: db,
 	}, nil
 }
-func (c *StorageEngine) Insert(activity *api.Activity) (int, error) {
-	res, err := c.db.Exec("INSERT INTO StorageEngine VALUES(?,?,?);", activity.Id, activity.Time.AsTime(), activity.Description)
+func (c *StorageEngineImpl) Create(storageName string, key string, value string) error {
+	res, err := c.db.Exec(
+		fmt.Sprintf("INSERT INTO %v VALUES(?,?);", strings.ToUpper(storageName)), key, value)
 	if err != nil {
-		return 0, err
+		//TODO check how to recognize that table does not exist yet and if table does not exist, create it and try again
+		if err != nil {
+			log.Printf("Storage %v does not yet exist, creating...", storageName)
+			if _, err := c.db.Exec(fmt.Sprintf(createStatement, storageName)); err != nil {
+				return err
+			}
+			err = nil
+			res, err = c.db.Exec(
+				fmt.Sprintf("INSERT INTO %v VALUES(?,?);", strings.ToUpper(storageName)), key, value)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 
-	var id int64
-	if id, err = res.LastInsertId(); err != nil {
-		return 0, err
+	if _, err = res.LastInsertId(); err != nil {
+		return err
 	}
-	log.Printf("Added %v as %d", activity, id)
-	return int(id), nil
+	log.Printf("Created on storage %v with key %v value %v", storageName, key, value)
+	return nil
 }
 
-func (c *StorageEngine) Update(activity *api.Activity) (int, error) {
-	res, err := c.db.Exec("UPDATE StorageEngine SET description = ? where id = ?;", activity.Description, activity.Id)
+func (c *StorageEngineImpl) Update(storageName string, key string, value string) error {
+	_, err := c.db.Exec(
+		fmt.Sprintf("UPDATE %v SET value = ? where key = ?;", storageName), value, key)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	var id int64
-	if id, err = res.RowsAffected(); err != nil {
-		return 0, err
-	}
-	log.Printf("Added %v as %d", activity, id)
-	return int(id), nil
+	return nil
 }
 
-func (c *StorageEngine) Delete(id string) (int, error) {
-	res, err := c.db.Exec("DELETE FROM StorageEngine where id = ?;", id)
+func (c *StorageEngineImpl) Delete(storageName string, key string) error {
+	_, err := c.db.Exec(
+		fmt.Sprintf("DELETE FROM %v where key = ?;", storageName), key)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	var retId int64
-	if retId, err = res.RowsAffected(); err != nil {
-		return 0, err
-	}
-	log.Printf("Added %v", id)
-	return int(retId), nil
+	return nil
 }
 
-var ErrIDNotFound = errors.New("Id not found")
+var ErrIDNotFound = errors.New("Key not found")
 
-func (c *StorageEngine) Retrieve(id string) (*api.Activity, error) {
-	log.Printf("Getting %v", id)
+func (c *StorageEngineImpl) Retrieve(storageName string, key string) (string, error) {
+	log.Printf("Getting %v", key)
 
 	// Query DB row based on ID
-	row := c.db.QueryRow("SELECT id, time, description FROM StorageEngine WHERE id=?", id)
+	row := c.db.QueryRow(fmt.Sprintf("SELECT value FROM %v WHERE key=?", storageName), key)
 
-	// Parse row into Interval struct
-	activity := api.Activity{}
 	var err error
-	var time time.Time
-	if err = row.Scan(&activity.Id, &time, &activity.Description); err == sql.ErrNoRows {
+	var value *string
+
+	if err = row.Scan(&value); err == sql.ErrNoRows {
 		log.Printf("Id not found")
-		return &api.Activity{}, ErrIDNotFound
+		return "", ErrIDNotFound
 	}
-	activity.Time = timestamppb.New(time)
-	return &activity, err
+
+	return *value, err
 }
 
-func (c *StorageEngine) List(offset int) ([]*api.Activity, error) {
+//TODO use as example when implementing queries
+/**func (c *StorageEngineImpl) List(offset int) ([]*api.Activity, error) {
 	log.Printf("Getting list from offset %d\n", offset)
 
 	// Query DB row based on ID
-	rows, err := c.db.Query("SELECT * FROM StorageEngine WHERE ID > ? ORDER BY id DESC LIMIT 100", offset)
+	rows, err := c.db.Query("SELECT * FROM StorageEngineImpl WHERE ID > ? ORDER BY id DESC LIMIT 100", offset)
 	if err != nil {
 		return nil, err
 	}
@@ -122,4 +128,4 @@ func (c *StorageEngine) List(offset int) ([]*api.Activity, error) {
 		data = append(data, &i)
 	}
 	return data, nil
-}
+}**/

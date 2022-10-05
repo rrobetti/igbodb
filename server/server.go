@@ -15,15 +15,15 @@ import (
 
 type igboDBServer struct {
 	mygrpc.UnimplementedIgboDBServer
-	StorageEngine *engine.StorageEngine
+	StorageEngine engine.StorageEngine
 }
 
-func (s *igboDBServer) Retrieve(ctx context.Context, ids *mygrpc.Ids) (*mygrpc.Objects, error) {
+func (s *igboDBServer) Retrieve(ctx context.Context, objectKeys *mygrpc.ObjectKeys) (*mygrpc.Objects, error) {
 	var objects = mygrpc.Objects{
 		Items: []*mygrpc.Object{},
 	}
-	for _, id := range ids.Values {
-		resp, err := s.StorageEngine.Retrieve(id)
+	for _, key := range objectKeys.Keys {
+		value, err := s.StorageEngine.Retrieve(key.Type, key.Id)
 		if err == engine.ErrIDNotFound {
 			return nil, status.Error(codes.NotFound, "id was not found")
 		}
@@ -31,7 +31,8 @@ func (s *igboDBServer) Retrieve(ctx context.Context, ids *mygrpc.Ids) (*mygrpc.O
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		object := mygrpc.Object{}
-		_ = json.Unmarshal([]byte(resp.Description), &object)
+		object.Key = key
+		_ = json.Unmarshal([]byte(value), &object.Attributes)
 		objects.Items = append(objects.Items, &object)
 	}
 
@@ -43,11 +44,8 @@ func (s *igboDBServer) Create(ctx context.Context, objects *mygrpc.Objects) (*my
 		Results: []*mygrpc.Result{},
 	}
 	for _, object := range objects.Items {
-		activity := new(mygrpc.Activity)
-		activity.Id = object.Id
-		json, _ := json.Marshal(object)
-		activity.Description = string(json)
-		_, err := s.StorageEngine.Insert(activity)
+		json, _ := json.Marshal(object.Attributes) //TODO change to a different format to avoid using JSON
+		err := s.StorageEngine.Create(object.Key.Type, object.Key.Id, string(json))
 		var result = new(mygrpc.Result)
 		if err != nil {
 			result.Type = mygrpc.ResultType_FAILURE
@@ -66,11 +64,8 @@ func (s *igboDBServer) Update(ctx context.Context, objects *mygrpc.Objects) (*my
 		Results: []*mygrpc.Result{},
 	}
 	for _, object := range objects.Items {
-		activity := new(mygrpc.Activity)
-		activity.Id = object.Id
-		json, _ := json.Marshal(object)
-		activity.Description = string(json)
-		_, err := s.StorageEngine.Update(activity)
+		json, _ := json.Marshal(object.Attributes)
+		err := s.StorageEngine.Update(object.Key.Type, object.Key.Id, string(json))
 		var result = new(mygrpc.Result)
 		if err != nil {
 			result.Type = mygrpc.ResultType_FAILURE
@@ -84,12 +79,12 @@ func (s *igboDBServer) Update(ctx context.Context, objects *mygrpc.Objects) (*my
 	return &responses, nil
 }
 
-func (s *igboDBServer) Delete(ctx context.Context, ids *mygrpc.Ids) (*mygrpc.OperationResults, error) {
+func (s *igboDBServer) Delete(ctx context.Context, objectKeys *mygrpc.ObjectKeys) (*mygrpc.OperationResults, error) {
 	var responses = mygrpc.OperationResults{
 		Results: []*mygrpc.Result{},
 	}
-	for _, id := range ids.Values {
-		_, err := s.StorageEngine.Delete(id)
+	for _, oKey := range objectKeys.Keys {
+		err := s.StorageEngine.Delete(oKey.Type, oKey.Id)
 		var result = new(mygrpc.Result)
 		if err != nil {
 			result.Type = mygrpc.ResultType_FAILURE
@@ -104,7 +99,7 @@ func (s *igboDBServer) Delete(ctx context.Context, ids *mygrpc.Ids) (*mygrpc.Ope
 }
 
 func NewGRPCServer() *grpc.Server {
-	var engine *engine.StorageEngine
+	var engine *engine.StorageEngineImpl
 	var err error
 	if engine, err = engine.NewStorageEngine(); err != nil {
 		log.Fatal(err)
