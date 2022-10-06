@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	engine "igbodb/engine"
 	mygrpc "igbodb/grpc"
 	"log"
 )
@@ -15,7 +14,7 @@ import (
 
 type igboDBServer struct {
 	mygrpc.UnimplementedIgboDBServer
-	StorageEngine engine.StorageEngine
+	StorageEngine StorageEngine
 }
 
 func (s *igboDBServer) Retrieve(ctx context.Context, objectKeys *mygrpc.ObjectKeys) (*mygrpc.Objects, error) {
@@ -24,7 +23,7 @@ func (s *igboDBServer) Retrieve(ctx context.Context, objectKeys *mygrpc.ObjectKe
 	}
 	for _, key := range objectKeys.Keys {
 		value, err := s.StorageEngine.Retrieve(key.Type, key.Id)
-		if err == engine.ErrIDNotFound {
+		if err == ErrIDNotFound {
 			return nil, status.Error(codes.NotFound, "id was not found")
 		}
 		if err != nil {
@@ -99,7 +98,7 @@ func (s *igboDBServer) Delete(ctx context.Context, objectKeys *mygrpc.ObjectKeys
 }
 
 func NewGRPCServer() *grpc.Server {
-	var engine *engine.StorageEngineImpl
+	var engine *StorageEngineImpl
 	var err error
 	if engine, err = engine.NewStorageEngine(); err != nil {
 		log.Fatal(err)
