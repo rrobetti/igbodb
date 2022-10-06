@@ -1,13 +1,13 @@
 package main
 
 import (
+	"fmt"
+	"igbodb/leaderwritter"
+	"igbodb/loadmanager"
+	"igbodb/readreplica"
+	"igbodb/server"
 	"log"
 	"net"
-    "fmt"
-	"igbodb/leader-writter"
-    "igbodb/load-manager"
-    "igbodb/read-replica"
-    "igbodb/server"
 )
 
 func main() {
@@ -17,16 +17,16 @@ func main() {
 	readreplica.Print()
 
 	log.Println("Starting listening on port 8080")
-     port := ":8080"
+	port := ":1234"
 
-     lis, err := net.Listen("tcp", port)
-     if err != nil {
-      log.Fatalf("failed to listen: %v", err)
-     }
-     log.Printf("Listening on %s", port)
-     srv := server.NewGRPCServer()
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	log.Printf("Listening on %s", port)
+	srv := server.NewGRPCServer()
 
-     if err := srv.Serve(lis); err != nil {
-      log.Fatalf("failed to serve: %v", err)
-     }
+	if err := srv.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
