@@ -60,7 +60,7 @@ func TestCRUD(t *testing.T) {
 		t.Errorf("got %v want successful deletion", err)
 	}
 	valueRet, err = engine.Retrieve(storage, key)
-	if err != nil {
+	if err == nil {
 		t.Errorf("got succesful response want %v ", ErrIDNotFound)
 	}
 }
