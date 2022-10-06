@@ -37,7 +37,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Errorf("got %v want successful retrieve", err)
 	}
-	if (valueRet != value) {
+	if valueRet != value {
 		t.Errorf("got %v want %v", valueRet, value)
 	}
 
@@ -50,7 +50,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Errorf("got %v want successful retrieve", err)
 	}
-	if (valueRet != valueUpdated) {
+	if valueRet != valueUpdated {
 		t.Errorf("got %v want %v", valueRet, value)
 	}
 
@@ -60,7 +60,7 @@ func TestCRUD(t *testing.T) {
 		t.Errorf("got %v want successful deletion", err)
 	}
 	valueRet, err = engine.Retrieve(storage, key)
-	if err == nil {
+	if err != nil {
 		t.Errorf("got succesful response want %v ", ErrIDNotFound)
 	}
 }
