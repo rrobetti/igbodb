@@ -17,10 +17,7 @@ func TestCRUD(t *testing.T) {
 	var valueUpdated = "value1Updated"
 
 	//CLEAN PREVIOUS TEST
-	err = engine.Delete(storage, key)
-	if err != nil {
-		t.Errorf("got %v want successful deletion", err)
-	}
+	_ = engine.Delete(storage, key)
 
 	// CREATE
 	err = engine.Create(storage, key, value)

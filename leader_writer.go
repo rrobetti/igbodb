@@ -1,7 +1,7 @@
-package leaderwritter
+package main
 
 import "fmt"
 
-func Print() {
+func PrintWriter() {
 	fmt.Println("From main leaderwriter..")
 }

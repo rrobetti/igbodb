@@ -1,7 +1,7 @@
-package loadmanager
+package main
 
 import "fmt"
 
-func Print() {
+func PrintLoadManager() {
 	fmt.Println("From main loadmanager..")
 }

@@ -2,18 +2,15 @@ package main
 
 import (
 	"fmt"
-	"igbodb/leaderwritter"
-	"igbodb/loadmanager"
-	"igbodb/readreplica"
 	"log"
 	"net"
 )
 
 func main() {
 	fmt.Println("From main function..")
-	leaderwritter.Print()
-	loadmanager.Print()
-	readreplica.Print()
+	PrintWriter()
+	PrintLoadManager()
+	PrintReadReplica()
 
 	log.Println("Starting listening on port 1234")
 	port := ":1234"

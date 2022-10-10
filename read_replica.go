@@ -1,7 +1,7 @@
-package readreplica
+package main
 
 import "fmt"
 
-func Print() {
+func PrintReadReplica() {
 	fmt.Println("From main readreplica..")
 }
